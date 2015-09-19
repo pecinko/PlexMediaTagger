@@ -85,25 +85,27 @@ class VideoItemProcessor:
     
     def getFileCommentTagContents(self, part_item):
         """docstring for getFileCommentTagContents"""
-        AtomicParsley = os.path.join(sys.path[0], "AtomicParsley32")
+        # use latest subler as it can read metadata
+        SublerCLI = os.path.join(sys.path[0], "SublerCLI")
 
         #Create the command line string
-        get_tags_cmd = ['%s' % AtomicParsley]
+        get_tags_cmd = ['%s' % SublerCLI]
+        get_tags_cmd.append("-source")
         get_tags_cmd.append('%s' % part_item.modified_file_path())
-        get_tags_cmd.append('-t')
+        get_tags_cmd.append('-listmetadata')
         
         #check if file has already been tagged
         result = subprocess.Popen(get_tags_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         
         #error checking
-        if 'AtomicParsley error' in result:
+        if "Error" in result:
             logging.critical("Failed to determine file tagged status")
-            return nil
-        #end if 'AtomicParsley error' in result:
+            return ""
+        #end if "Error" in result:
         
         for line in result.split("\n"):
-            if DataTokens.atomicparsely_comment_token in line:
-                return line.replace(DataTokens.atomicparsely_comment_token, '')
+            if DataTokens.subler_comment_token in line:
+                return line.replace(DataTokens.subler_comment_token, '')
 
         logging.info("File untagged")
         return ""
@@ -143,7 +145,6 @@ class VideoItemProcessor:
         
         #removal of artwork doesn't seem to work
         all_tags = ["{Artwork:}", "{HD Video:}", "{Gapless:}", "{Content Rating:}", "{Media Kind:}", "{Name:}", "{Artist:}", "{Album Artist:}", "{Album:}", "{Grouping:}", "{Composer:}", "{Comments:}", "{Genre:}", "{Release Date:}", "{Track #:}", "{Disk #:}", "{TV Show:}", "{TV Episode #:}", "{TV Network:}", "{TV Episode ID:}", "{TV Season:}", "{Description:}", "{Long Description:}", "{Rating:}", "{Rating Annotation:}", "{Studio:}", "{Cast:}", "{Director:}", "{Codirector:}", "{Producers:}", "{Screenwriters:}", "{Lyrics:}", "{Copyright:}", "{Encoding Tool:}", "{Encoded By:}", "{contentID:}"]#these are currently not supported in subler cli tool, "{XID:}", "{iTunes Account:}", "{Sort Name:}", "{Sort Artist:}", "{Sort Album Artist:}", "{Sort Album:}", "{Sort Composer:}", "{Sort TV Show:}"]
-        
         logging.warning("removing tags...")
         
         #Create the command line command
@@ -155,7 +156,7 @@ class VideoItemProcessor:
         else:
             action_description = "Tags removed"
         #end if optimize
-        
+
         tag_removal_cmd.append("-t")
         tag_removal_cmd.append("".join(all_tags))
         tag_removal_cmd.append("-i")
@@ -234,7 +235,7 @@ class VideoItemProcessor:
         else:
             Summary().metadata_optimized_failed()
         #end success
-    #end remove_tags
+    #end optimize
     
     def export_resources(self, part_item):
         part_item_file_path = part_item.modified_file_path()
